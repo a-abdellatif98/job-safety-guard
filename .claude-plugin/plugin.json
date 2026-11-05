@@ -1,0 +1,24 @@
+{
+  "name": "job-safety-guard",
+  "description": "Reviews background jobs for production safety in Sidekiq and Active Job, Celery (Django), Laravel queues and BullMQ: idempotency, ids instead of objects, retry limits and backoff, enqueue inside transactions, uniqueness and locking, batching of long jobs and timeouts, with a static scanner for the patterns that can be detected from code",
+  "version": "1.0.0",
+  "author": {
+    "name": "Ahmed",
+    "email": "ahmed.abdelatife@gmail.com"
+  },
+  "homepage": "https://github.com/a-abdellatif98/job-safety-guard",
+  "repository": "https://github.com/a-abdellatif98/job-safety-guard",
+  "license": "MIT",
+  "icon": "assets/icon.svg",
+  "keywords": [
+    "activejob",
+    "background-jobs",
+    "bullmq",
+    "celery",
+    "idempotency",
+    "laravel",
+    "queues",
+    "retries",
+    "sidekiq"
+  ]
+}
