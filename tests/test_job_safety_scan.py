@@ -223,8 +223,26 @@ def test_comments_are_ignored(tmp_path):
 
 def test_secret_and_config_files_are_never_read(tmp_path):
     body = "transaction do\n  SyncJob.perform_async(id)\nend\n"
-    for name in (".env.rb", "config/credentials.rb", "config/secrets.rb", "config/database.php", "config/queue.php", "config/redis.rb", "app/settings.py"):
+    for name in (".hidden.rb", "app/.hidden.rb", "config/credentials.rb", "config/secrets.rb", "config/database.php", "config/queue.php", "config/redis.rb", "app/settings.py"):
         assert rules(tmp_path / name.replace("/", "_"), name, body) == [], name
+
+
+def test_hidden_directories_and_virtualenvs_are_skipped(tmp_path):
+    body = "transaction do\n  SyncJob.perform_async(id)\nend\n"
+    assert rules(tmp_path / "a", ".hidden-dir/o.rb", body) == []
+    assert rules(tmp_path / "b", "myenv/o.rb", body) == ["JOB-TXN-ENQUEUE"]
+    (tmp_path / "c" / "venvdir").mkdir(parents=True)
+    (tmp_path / "c" / "venvdir" / "pyvenv.cfg").write_text("home = x\n")
+    assert rules(tmp_path / "c", "venvdir/o.rb", body) == []
+
+
+def test_symlinked_files_are_not_read(tmp_path):
+    body = "transaction do\n  SyncJob.perform_async(id)\nend\n"
+    outside = tmp_path / "outside.rb"
+    outside.write_text(body)
+    (tmp_path / "proj").mkdir()
+    (tmp_path / "proj" / "link.rb").symlink_to(outside)
+    assert [f.rule for f in scanner.scan([str(tmp_path / "proj")])] == []
 
 
 def test_skips_vendor_and_node_modules(tmp_path):

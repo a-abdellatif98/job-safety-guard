@@ -31,7 +31,7 @@ Stacks: Sidekiq and Active Job (Rails), Celery (Django), Laravel queues, BullMQ 
 /review-jobs the nightly export keeps running twice
 ```
 
-It reads the job and every enqueue site (read-only tools only) and returns numbered findings with the failure in production and the fix as code. It never opens environment, credential or queue connection files.
+It reads the job and every enqueue site (read-only tools only) and returns numbered findings with the failure in production and the fix as code. It never opens dotfiles, credential or queue connection files.
 
 ### Skill
 
@@ -54,7 +54,7 @@ python3 scripts/job_safety_scan.py --json app/
 
 Exit code 1 when it finds something. Rule ids: `JOB-TXN-ENQUEUE`, `JOB-OBJECT-ARG`, `JOB-RETRY-UNBOUNDED`, `JOB-RETRY-BROAD`, `JOB-RETRY-NO-BACKOFF`, `JOB-NO-TIMEOUT`, `JOB-HTTP-NO-TIMEOUT`, `JOB-NO-BATCH`, `JOB-NON-IDEMPOTENT`, `JOB-SELF-REENQUEUE`. Add `job-safety: ok` to a line to suppress a hit.
 
-It is a heuristic over single files and indentation. It skips environment, credential, secret, database, queue config and `settings*.py` files, and cannot see global timeouts or retry settings or uniqueness designed elsewhere, so confirm each hit in the code. The scanner is not registered as a hook and never runs on its own.
+It is a heuristic over single files and indentation. It skips dotfiles, credential, secret, database, queue config and `settings*.py` files, and cannot see global timeouts or retry settings or uniqueness designed elsewhere, so confirm each hit in the code. The scanner is not registered as a hook and never runs on its own.
 
 ## Tests
 

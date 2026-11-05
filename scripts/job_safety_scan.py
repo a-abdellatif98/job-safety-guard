@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Heuristic static scan for background job safety problems (Sidekiq/Active Job, Celery, Laravel queues, BullMQ)."""
 
 import argparse
@@ -9,11 +8,11 @@ import sys
 from dataclasses import asdict, dataclass
 
 SKIP_DIRS = {
-    ".git", ".hg", ".svn", ".venv", "venv", "env", "node_modules", "vendor",
+    "venv", "node_modules", "vendor",
     "__pycache__", "tmp", "log", "storage", "dist", "build", "coverage", "spec", "tests", "__tests__", "settings",
 }
 SKIP_FILE = re.compile(
-    r"^\.env|^credentials(?:\.[\w.]+)?$|^secrets?\.|^database\.|^queue\.php$|^redis\.\w+$|^settings(?:_\w+)?\.py$|_settings\.py$|\.(?:pem|key)$"
+    r"^\.|^credentials(?:\.[\w.]+)?$|^secrets?\.|^database\.|^queue\.php$|^redis\.\w+$|^settings(?:_\w+)?\.py$|_settings\.py$|\.(?:pem|key)$"
     r"|_spec\.rb$|\.(?:test|spec)\.[jt]sx?$|^test_.*\.py$|_test\.py$", re.I
 )
 EXT_FRAMEWORK = {
@@ -65,7 +64,7 @@ STRIPE_CREATE = {
     "php": re.compile(r"->(?:charges|paymentIntents|transfers|refunds|payouts)->create\("),
     "node": re.compile(r"\.(?:charges|paymentIntents|transfers|refunds|payouts)\.create\("),
 }
-IDEMPOTENCY_KEY = re.compile(r"idempotency_key|idempotencyKey")
+IDEMPOTENCY_ARG = re.compile(r"idempotency_key|idempotencyKey")
 COUNTER = {
     "ruby": re.compile(r"\.(?:increment|decrement)!\(|\b(?:increment_counter|update_counters)\("),
     "python": re.compile(r"\bF\([^)]*\)\s*[+\-]"),
@@ -110,7 +109,10 @@ def iter_files(paths):
             yield path
             continue
         for root, dirs, files in os.walk(path):
-            dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+            dirs[:] = sorted(
+                d for d in dirs
+                if d not in SKIP_DIRS and not d.startswith(".") and not os.path.exists(os.path.join(root, d, "pyvenv.cfg"))
+            )
             for name in sorted(files):
                 yield os.path.join(root, name)
 
@@ -119,7 +121,7 @@ def load_sources(paths):
     sources = []
     for path in iter_files(paths):
         framework = EXT_FRAMEWORK.get(os.path.splitext(path)[1])
-        if not framework or SKIP_FILE.search(os.path.basename(path)):
+        if not framework or SKIP_FILE.search(os.path.basename(path)) or os.path.islink(path):
             continue
         try:
             if os.path.getsize(path) > MAX_BYTES:
@@ -339,7 +341,7 @@ def job_body_findings(framework, lines, idx):
             if not re.search(r"take|limit", call_args(lines, idx, m.end())):
                 out.append((NOBATCH, "unbounded findMany/findAll in a job: page with take or limit, or use a cursor."))
     for m in STRIPE_CREATE[framework].finditer(line):
-        if not IDEMPOTENCY_KEY.search(call_args(lines, idx, m.end())):
+        if not IDEMPOTENCY_ARG.search(call_args(lines, idx, m.end())):
             out.append((NONIDEM, "payment API create without an idempotency key: a retry can charge twice."))
     if COUNTER[framework].search(line):
         out.append((NONIDEM, "relative counter update (increment or F() + 1) in a job: a retry applies it again; guard with a processed marker or write an absolute value."))

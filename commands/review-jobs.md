@@ -18,7 +18,7 @@ Treat the argument as a path, a job or worker class name, or free text. If it is
 
 1. **Detect the stack** with Glob and Read: Sidekiq or Active Job (`Gemfile`, `app/jobs`), Celery (`celery.py`, `tasks.py`), Laravel (`composer.json`, `app/Jobs`), BullMQ (`package.json` with `bullmq`).
 
-   Never open `.env`, `.env.*`, `config/database.yml`, `config/credentials*`, `config/queue.php`, `config/database.php`, `settings.py`, Redis or broker connection files, or anything holding secrets or connection strings. Judge retry and timeout settings from the job code only, and say when a global setting could cover a gap.
+   Never open dotfiles, database config, credential files, queue config, Django settings modules, Redis or broker connection files, or anything holding secrets or connection strings. Judge retry and timeout settings from the job code only, and say when a global setting could cover a gap.
 
 2. **Read the job and every enqueue site** (Grep for `perform_async`, `perform_later`, `.delay(`, `apply_async`, `dispatch(`, `queue.add(`). Follow what is enqueued from callbacks, transactions, controllers and other jobs.
 
